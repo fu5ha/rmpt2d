@@ -1,11 +1,11 @@
 int MAX_RAY_DEPTH = 5; // How many bounces each original light beam can have
-float MAX_RAY_DIST = 1000.0; // Maximum distance a ray can travel before being considered invalid
-float EXPOSURE = 1.0 / 8.0; // A smaller fraction makes it darker, higher makes it brighter
+float MAX_RAY_DIST = 800.0; // Maximum distance a ray can travel before being considered invalid
+float EXPOSURE = 1.0 / 30.0; // A smaller fraction makes it darker, higher makes it brighter
 float EPS_ANGLE = 0.001; // Angle between each ray that gets casted from each light
 float RAYS_PER_FRAME = 20; // How many rays to cast each frame
-int MAX_SPINS = 3; // How many 'spins' around the origin will be executed before stopping
+int MAX_SPINS = 4; // How many 'spins' around the origin will be executed before stopping
 int DRAW_FIRST_RAY_DEPTH = 0; // Change from 0 to MAX_RAY_DEPTH, changes how many bounces a ray must have taken before it will be drawn
-int RANDOM_SEED = 100; // Change to any number to make a new random scene
+int RANDOM_SEED = 20; // Change to any number to make a new random scene
 boolean DEBUG_DRAW = false; // Make true to see a debug view of all the rays
 int CANVAS_WIDTH = 720;
 int CANVAS_HEIGHT = 540;
@@ -13,32 +13,106 @@ int CANVAS_HEIGHT = 540;
 void setup() {
   size(720, 540);
   internal_setup();
-
-  for (int i = 0; i < 1; i++) {
-    PVector pos = new PVector(200, CANVAS_HEIGHT/2 + 100);
-    float radius = random(10, 100);
-    Spectrum col = new Spectrum(0.5, 0.4, 0.8);
-    float ior = 0.8;
-    float reflectivity = 0.3;
-    Circle circle = new Circle(pos, radius, col, ior, reflectivity);
-    world_objects.add(circle);
-  }
-  for (int i = 0; i < 2; i++) {
-    PVector pos = new PVector(520, CANVAS_HEIGHT/2 - 100);
-    float radius = random(30, 100);
-    Spectrum col = new Spectrum(0.8, 0.2, 0.3);
-    float ior = 1.2;
-    float reflectivity = 0.7;
-    Star star = new Star(pos, radius, col, ior, reflectivity);
-    world_objects.add(star);
-  }
-
   
+  // Circles
+  PVector pos = new PVector(CANVAS_WIDTH/2, CANVAS_HEIGHT/6);
+  float radius = 75;
+  Spectrum col = new Spectrum(random(0.2, 1.0), random(0.2, 1.0), random(0.2, 1.0));
+  float ior = 0.5;
+  float reflectivity = 0.8;
+  Circle circle = new Circle(pos, radius, col, ior, reflectivity);
+  world_objects.add(circle);
+  
+  pos = new PVector(CANVAS_WIDTH/2, CANVAS_HEIGHT - CANVAS_HEIGHT/6);
+  col = new Spectrum(random(0.2, 1.0), random(0.2, 1.0), random(0.2, 1.0));
+  circle = new Circle(pos, radius, col, ior, reflectivity);
+  world_objects.add(circle);
+  
+  pos = new PVector(CANVAS_WIDTH/6, CANVAS_HEIGHT/2);
+  col = new Spectrum(random(0.2, 1.0), random(0.2, 1.0), random(0.2, 1.0));
+  circle = new Circle(pos, radius, col, ior, reflectivity);
+  world_objects.add(circle);
+  
+  pos = new PVector(CANVAS_WIDTH - CANVAS_WIDTH/6, CANVAS_HEIGHT/2);
+  col = new Spectrum(random(0.2, 1.0), random(0.2, 1.0), random(0.2, 1.0));
+  circle = new Circle(pos, radius, col, ior, reflectivity);
+  world_objects.add(circle);
+  
+  // Rectangle
+  pos = new PVector(CANVAS_WIDTH/2, CANVAS_HEIGHT/2);
+  float w = 300;
+  float h = 200;
+  col = new Spectrum(random(0.2, 1.0), random(0.2, 1.0), random(0.2, 1.0));
+  ior = random(0.2, 1.8);
+  reflectivity = 0.8;
+  Rectangle rectangle = new Rectangle(pos, w, h, col, ior, reflectivity);
+  world_objects.add(rectangle);
+  
+  // Stars
+  pos = new PVector(CANVAS_WIDTH / 8, CANVAS_HEIGHT / 8);
+  radius = 45;
+  col = new Spectrum(random(0.2, 1.0), random(0.2, 1.0), random(0.2, 1.0));
+  ior = 0.95;
+  reflectivity = 0.8;
+  Star star = new Star(pos, radius, col, ior, reflectivity);
+  world_objects.add(star);
+  
+  pos = new PVector(CANVAS_WIDTH - CANVAS_WIDTH / 8, CANVAS_HEIGHT / 8);
+  col = new Spectrum(random(0.2, 1.0), random(0.2, 1.0), random(0.2, 1.0));
+  star = new Star(pos, radius, col, ior, reflectivity);
+  world_objects.add(star);
+  
+  pos = new PVector(CANVAS_WIDTH - CANVAS_WIDTH / 8, CANVAS_HEIGHT - CANVAS_HEIGHT / 8);
+  col = new Spectrum(random(0.2, 1.0), random(0.2, 1.0), random(0.2, 1.0));
+  star = new Star(pos, radius, col, ior, reflectivity);
+  world_objects.add(star);
+  
+  pos = new PVector(CANVAS_WIDTH / 8, CANVAS_HEIGHT - CANVAS_HEIGHT / 8);
+  col = new Spectrum(random(0.2, 1.0), random(0.2, 1.0), random(0.2, 1.0));
+  star = new Star(pos, radius, col, ior, reflectivity);
+  world_objects.add(star);
+  
+  // Center light
   lights.add(new Light(
     new PVector(CANVAS_WIDTH/2, CANVAS_HEIGHT/2),
-    new Spectrum(1.0, 0.6, 0.3)
+    new Spectrum(1.5, 0.25, 0.55)
   ));
-
+  
+  // Corner lights
+  lights.add(new Light(
+    new PVector(CANVAS_WIDTH/8, CANVAS_HEIGHT/8),
+    new Spectrum(0.35, 0.45, 0.9)
+  ));
+  lights.add(new Light(
+    new PVector(CANVAS_WIDTH - CANVAS_WIDTH/8, CANVAS_HEIGHT/8),
+    new Spectrum(0.45, 0.25, 0.85)
+  ));
+  lights.add(new Light(
+    new PVector(CANVAS_WIDTH - CANVAS_WIDTH/8, CANVAS_HEIGHT - CANVAS_HEIGHT/8),
+    new Spectrum(0.35, 0.55, 0.85)
+  ));
+  lights.add(new Light(
+    new PVector(CANVAS_WIDTH/8, CANVAS_HEIGHT - CANVAS_HEIGHT/8),
+    new Spectrum(0.6, 0.95, 0.5)
+  ));
+  
+  // Middle side lights
+  lights.add(new Light(
+    new PVector(CANVAS_WIDTH/2, CANVAS_HEIGHT/8),
+    new Spectrum(0.35, 0.45, 0.9)
+  ));
+  lights.add(new Light(
+    new PVector(CANVAS_WIDTH/8, CANVAS_HEIGHT/2),
+    new Spectrum(0.45, 0.25, 0.85)
+  ));
+  lights.add(new Light(
+    new PVector(CANVAS_WIDTH - CANVAS_WIDTH/8, CANVAS_HEIGHT/2),
+    new Spectrum(0.35, 0.55, 0.85)
+  ));
+  lights.add(new Light(
+    new PVector(CANVAS_WIDTH/2, CANVAS_HEIGHT - CANVAS_HEIGHT/8),
+    new Spectrum(0.6, 0.95, 0.5)
+  ));
 }
 
 void draw() {
@@ -52,7 +126,7 @@ void draw() {
   rect(0, 0, CANVAS_WIDTH, CANVAS_WIDTH);
   blendMode(BLEND);
     
-  for (int i = 0; i < RAYS_PER_FRAME; i ++) {
+  for (int i = 0; i < RAYS_PER_FRAME; i++) {
     if (angle > last_spin_angle + TWO_PI)
       continue;
       
@@ -160,6 +234,58 @@ public class Circle implements WorldObject {
   
   public float get_distance(PVector pos) {
     return circle(PVector.sub(pos, this.pos), this.radius);
+  }
+  
+  public Spectrum evaluate_brdf(PVector light_vec, PVector normal) {
+    return this.col;
+  }
+  
+  public float get_ior() {
+    return this.ior;
+  }
+  
+  public float get_reflectivity() {
+    return this.reflectivity;
+  }
+}
+
+public class Rectangle implements WorldObject {
+  public PVector pos;
+  public float w;
+  public float h;
+  
+  private Spectrum col;
+  private float ior;
+  private float reflectivity;
+  
+  public Rectangle(PVector pos, float w, float h, Spectrum col, float ior, float reflectivity) {
+    this.pos = pos;
+    this.w = w;
+    this.h = h;
+    this.col = col;
+    this.ior = ior;
+    this.reflectivity = reflectivity;
+  }
+  
+  public float get_distance(PVector pos) {
+    PVector offset = PVector.sub(pos, this.pos);
+    float rect_distance = rectangle(offset, this.w / 2, this.h / 2);
+    float m = max(this.w, this.h);
+    
+    PVector offsetc1 = PVector.sub(offset, new PVector(-this.w/2, -this.h/2));
+    float circle1_distance = circle(offsetc1, m / 2);
+    
+    PVector offsetc2 = PVector.sub(offset, new PVector(this.w/2, this.h/2));
+    float circle2_distance = circle(offsetc2, m / 2);
+    
+    float cut_thing = difference(difference(rect_distance, circle1_distance), circle2_distance);
+    
+    float rect2_distance = rectangle(offset, (this.w / 2) - (0.4 * m / 2), (this.h / 2) - (0.4 * m / 2));
+    float rect3_distance = rectangle(offset, (this.w / 2) - (0.2 * m / 2), (this.h / 2) - (0.2 * m / 2));
+    
+    float ring_rect = difference(rect3_distance, rect2_distance);
+    
+    return union(ring_rect, cut_thing);
   }
   
   public Spectrum evaluate_brdf(PVector light_vec, PVector normal) {
@@ -557,7 +683,8 @@ void drawLine(float x0, float y0, float x1, float y1, Spectrum s) {
     double gradient = dy / dx;
     
     double angle = Math.atan2(dy, dx);
-    double m = 0.5 * Math.abs(Math.sin(angle * 2)) + 0.5;
+
+    double m = 1.0 + 0.5 * (-Math.cos(2 * angle) + 1.0);
 
     // handle first endpoint
     double xend = Math.round(x0);
