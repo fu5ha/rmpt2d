@@ -1,11 +1,11 @@
 int MAX_RAY_DEPTH = 5; // How many bounces each original light beam can have
 float MAX_RAY_DIST = 1000.0; // Maximum distance a ray can travel before being considered invalid
-float EXPOSURE = 1.0 / 12.0; // A smaller fraction makes it darker, higher makes it brighter
+float EXPOSURE = 1.0 / 8.0; // A smaller fraction makes it darker, higher makes it brighter
 float EPS_ANGLE = 0.001; // Angle between each ray that gets casted from each light
 float RAYS_PER_FRAME = 20; // How many rays to cast each frame
 int MAX_SPINS = 3; // How many 'spins' around the origin will be executed before stopping
 int DRAW_FIRST_RAY_DEPTH = 0; // Change from 0 to MAX_RAY_DEPTH, changes how many bounces a ray must have taken before it will be drawn
-int RANDOM_SEED = 312; // Change to any number to make a new random scene
+int RANDOM_SEED = 100; // Change to any number to make a new random scene
 boolean DEBUG_DRAW = false; // Make true to see a debug view of all the rays
 int CANVAS_WIDTH = 720;
 int CANVAS_HEIGHT = 540;
@@ -14,21 +14,21 @@ void setup() {
   size(720, 540);
   internal_setup();
 
-  for (int i = 0; i < 7; i++) {
-    PVector pos = new PVector(random(CANVAS_WIDTH), random(CANVAS_HEIGHT));
-    float radius = random(10, 50);
-    Spectrum col = new Spectrum(random(0.45, 1.0), random(0.45, 1.0), random(0.45, 1.0));
-    float ior = random(0.7, 1.3);
-    float reflectivity = random(0.2, 0.8);
+  for (int i = 0; i < 1; i++) {
+    PVector pos = new PVector(200, CANVAS_HEIGHT/2 + 100);
+    float radius = random(10, 100);
+    Spectrum col = new Spectrum(0.5, 0.4, 0.8);
+    float ior = 0.8;
+    float reflectivity = 0.3;
     Circle circle = new Circle(pos, radius, col, ior, reflectivity);
     world_objects.add(circle);
   }
-  for (int i = 0; i < 3; i++) {
-    PVector pos = new PVector(random(CANVAS_WIDTH), random(CANVAS_HEIGHT));
+  for (int i = 0; i < 2; i++) {
+    PVector pos = new PVector(520, CANVAS_HEIGHT/2 - 100);
     float radius = random(30, 100);
-    Spectrum col = new Spectrum(random(0.45, 1.0), random(0.45, 1.0), random(0.45, 1.0));
-    float ior = random(0.7, 1.3);
-    float reflectivity = random(0.2, 0.8);
+    Spectrum col = new Spectrum(0.8, 0.2, 0.3);
+    float ior = 1.2;
+    float reflectivity = 0.7;
     Star star = new Star(pos, radius, col, ior, reflectivity);
     world_objects.add(star);
   }
@@ -38,21 +38,7 @@ void setup() {
     new PVector(CANVAS_WIDTH/2, CANVAS_HEIGHT/2),
     new Spectrum(1.0, 0.6, 0.3)
   ));
-  
-  lights.add(new Light(
-    new PVector(400.0, 180.0),
-    new Spectrum(0.3, 0.45, 1.0)
-  ));
-  
-  lights.add(new Light(
-    new PVector(150.0, 80.0),
-    new Spectrum(0.35, 0.625, 1.0)
-  ));
-  
-  lights.add(new Light(
-    new PVector(125.0, 450.0),
-    new Spectrum(0.9, 0.55, 0.85)
-  ));
+
 }
 
 void draw() {
@@ -140,7 +126,7 @@ public class Star implements WorldObject {
     float c2_d = circle(PVector.sub(norm_pos, new PVector(this.radius, -this.radius)), this.radius);
     float c3_d = circle(PVector.sub(norm_pos, new PVector(this.radius, this.radius)), this.radius);
     float c4_d = circle(PVector.sub(norm_pos, new PVector(-this.radius, this.radius)), this.radius);
-    return difference(difference(difference(difference(rect_d, -c1_d), -c2_d), -c3_d), -c4_d);
+    return difference(difference(difference(difference(rect_d, c1_d), c2_d), c3_d), c4_d);
   }
   
   public Spectrum evaluate_brdf(PVector light_vec, PVector normal) {
