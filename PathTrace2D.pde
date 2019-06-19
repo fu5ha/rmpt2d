@@ -1,42 +1,21 @@
-int MAX_RAY_DEPTH = 5;
-int MAX_MARCHES = 40;
-float MAX_RAY_DIST = 1000.0;
-float HIT_THRESHOLD = 0.0001;
-float EXPOSURE = 1.0 / 12.0;
-float EPS = 0.001;
-float EPS_ANGLE = 0.001;
-float ITERS_PER_FRAME = 20;
-int MAX_SPINS = 3;
-float RAY_POWER_RATIO = 0.1;
-int DRAW_FIRST_DEPTH = 0;
-int RANDOM_SEED = 312;
-boolean DEBUG_DRAW = false;
-
-float angle = 0.0;
-float last_spin_angle = 0.0;
-int spins = 0;
-ArrayList<Light> lights;
-ArrayList<WorldObject> world_objects;
-float[] imgbufR;
-float[] imgbufG;
-float[] imgbufB;
+int MAX_RAY_DEPTH = 5; // How many bounces each original light beam can have
+float MAX_RAY_DIST = 1000.0; // Maximum distance a ray can travel before being considered invalid
+float EXPOSURE = 1.0 / 12.0; // A smaller fraction makes it darker, higher makes it brighter
+float EPS_ANGLE = 0.001; // Angle between each ray that gets casted from each light
+float RAYS_PER_FRAME = 20; // How many rays to cast each frame
+int MAX_SPINS = 3; // How many 'spins' around the origin will be executed before stopping
+int DRAW_FIRST_RAY_DEPTH = 0; // Change from 0 to MAX_RAY_DEPTH, changes how many bounces a ray must have taken before it will be drawn
+int RANDOM_SEED = 312; // Change to any number to make a new random scene
+boolean DEBUG_DRAW = false; // Make true to see a debug view of all the rays
+int CANVAS_WIDTH = 720;
+int CANVAS_HEIGHT = 540;
 
 void setup() {
-  randomSeed(RANDOM_SEED);
-  size(540,540);
-  
-  if (DEBUG_DRAW)
-    frameRate(60);
-  else
-    frameRate(60);
-  
-  world_objects = new ArrayList<WorldObject>();
-  imgbufR = new float[291600];
-  imgbufG = new float[291600];
-  imgbufB = new float[291600];
+  size(720, 540);
+  internal_setup();
 
   for (int i = 0; i < 7; i++) {
-    PVector pos = new PVector(random(540.0), random(540.0));
+    PVector pos = new PVector(random(CANVAS_WIDTH), random(CANVAS_HEIGHT));
     float radius = random(10, 50);
     Spectrum col = new Spectrum(random(0.45, 1.0), random(0.45, 1.0), random(0.45, 1.0));
     float ior = random(0.7, 1.3);
@@ -45,7 +24,7 @@ void setup() {
     world_objects.add(circle);
   }
   for (int i = 0; i < 3; i++) {
-    PVector pos = new PVector(random(540.0), random(540.0));
+    PVector pos = new PVector(random(CANVAS_WIDTH), random(CANVAS_HEIGHT));
     float radius = random(30, 100);
     Spectrum col = new Spectrum(random(0.45, 1.0), random(0.45, 1.0), random(0.45, 1.0));
     float ior = random(0.7, 1.3);
@@ -53,11 +32,10 @@ void setup() {
     Star star = new Star(pos, radius, col, ior, reflectivity);
     world_objects.add(star);
   }
-  
-  lights = new ArrayList<Light>();
+
   
   lights.add(new Light(
-    new PVector(270.0, 270.0),
+    new PVector(CANVAS_WIDTH/2, CANVAS_HEIGHT/2),
     new Spectrum(1.0, 0.6, 0.3)
   ));
   
@@ -82,12 +60,13 @@ void draw() {
     background(0);
   
   copy_image();
+  
   blendMode(ADD);
   fill(25, 15, 30);
-  rect(0, 0, 540, 540);
+  rect(0, 0, CANVAS_WIDTH, CANVAS_WIDTH);
   blendMode(BLEND);
     
-  for (int i = 0; i < ITERS_PER_FRAME; i ++) {
+  for (int i = 0; i < RAYS_PER_FRAME; i ++) {
     if (angle > last_spin_angle + TWO_PI)
       continue;
       
@@ -138,8 +117,6 @@ void keyPressed() {
 ///////////////////////////////////////////
 ///////////////////////////////////////////
 
-
-
 public class Star implements WorldObject {
   public PVector pos;
   public float radius;
@@ -163,7 +140,7 @@ public class Star implements WorldObject {
     float c2_d = circle(PVector.sub(norm_pos, new PVector(this.radius, -this.radius)), this.radius);
     float c3_d = circle(PVector.sub(norm_pos, new PVector(this.radius, this.radius)), this.radius);
     float c4_d = circle(PVector.sub(norm_pos, new PVector(-this.radius, this.radius)), this.radius);
-    return max(max(max(max(rect_d, -c1_d), -c2_d), -c3_d), -c4_d);
+    return difference(difference(difference(difference(rect_d, -c1_d), -c2_d), -c3_d), -c4_d);
   }
   
   public Spectrum evaluate_brdf(PVector light_vec, PVector normal) {
@@ -218,10 +195,38 @@ public class Circle implements WorldObject {
 //////////////////////////////////////////////////
 //////////////////////////////////////////////////
 
+float EPS = 0.001;
+float HIT_THRESHOLD = 0.0001;
+int MAX_MARCHES = 40;
+float RAY_POWER_RATIO = 0.1;
+
+float angle = 0.0;
+float last_spin_angle = 0.0;
+int spins = 0;
+ArrayList<Light> lights;
+ArrayList<WorldObject> world_objects;
+float[] imgbufR;
+float[] imgbufG;
+float[] imgbufB;
+
+public void internal_setup() {
+  randomSeed(RANDOM_SEED);
+  
+  if (DEBUG_DRAW)
+    RAYS_PER_FRAME = 1;
+
+  world_objects = new ArrayList<WorldObject>();
+  lights = new ArrayList<Light>();
+  
+  imgbufR = new float[CANVAS_WIDTH * CANVAS_HEIGHT];
+  imgbufG = new float[CANVAS_WIDTH * CANVAS_HEIGHT];
+  imgbufB = new float[CANVAS_WIDTH * CANVAS_HEIGHT];
+}
+
 public void copy_image() {
-  for (int x = 0; x < 540; x++) {
-    for (int y = 0; y < 540; y++) {
-      int idx = x + (y * 540);
+  for (int x = 0; x < CANVAS_WIDTH; x++) {
+    for (int y = 0; y < CANVAS_HEIGHT; y++) {
+      int idx = x + (y * CANVAS_WIDTH);
       float fr = imgbufR[idx] * EXPOSURE;
       float fg = imgbufG[idx] * EXPOSURE;
       float fb = imgbufB[idx] * EXPOSURE;
@@ -234,6 +239,18 @@ public void copy_image() {
       set(x, y, color(r, g, b));
     }
   }
+}
+
+float intersection(float a, float b) {
+    return max(b, b);
+}
+
+float union(float a, float b) {
+  return min(a, b);
+}
+
+float difference(float a, float b) {
+  return max(a, -b);
 }
 
 public float rectangle(PVector pos, float w, float h) {
@@ -258,7 +275,7 @@ public void trace(ArrayList<Intersection> intersections, int curr_intersection_i
     PVector origin = intersection.ray.origin;
     PVector end = PVector.add(intersection.ray.origin, PVector.mult(intersection.ray.dir, intersection.ray.dist));
     
-    if (intersection.ray.depth >= DRAW_FIRST_DEPTH)
+    if (intersection.ray.depth >= DRAW_FIRST_RAY_DEPTH)
       drawLine(origin.x, origin.y, end.x, end.y, light_power);
     
     if (DEBUG_DRAW) {
@@ -506,10 +523,10 @@ void march(
 void plot(double xd, double yd, double a, Spectrum c) {
   int x = round((float)xd);
   int y = round((float)yd);
-  if (x >= 540 || x < 0 || y >= 540 || y < 0) {
+  if (x >= CANVAS_WIDTH || x < 0 || y >= CANVAS_HEIGHT || y < 0) {
     return;
   }
-  int idx = x + (540 * y);
+  int idx = x + (CANVAS_WIDTH * y);
   Spectrum mapped = c.attenuate((float)a);
   
   imgbufR[idx] += mapped.r;
@@ -552,7 +569,10 @@ void drawLine(float x0, float y0, float x1, float y1, Spectrum s) {
     double dx = x1 - x0;
     double dy = y1 - y0;
     double gradient = dy / dx;
- 
+    
+    double angle = Math.atan2(dy, dx);
+    double m = 0.5 * Math.abs(Math.sin(angle * 2)) + 0.5;
+
     // handle first endpoint
     double xend = Math.round(x0);
     double yend = y0 + gradient * (xend - x0);
@@ -561,11 +581,11 @@ void drawLine(float x0, float y0, float x1, float y1, Spectrum s) {
     double ypxl1 = ipart(yend);
  
     if (steep) {
-        plot(ypxl1, xpxl1, rfpart(yend) * xgap, s);
-        plot(ypxl1 + 1, xpxl1, fpart(yend) * xgap, s);
+        plot(ypxl1, xpxl1, rfpart(yend) * xgap * m, s);
+        plot(ypxl1 + 1, xpxl1, fpart(yend) * xgap * m, s);
     } else {
-        plot(xpxl1, ypxl1, rfpart(yend) * xgap, s);
-        plot(xpxl1, ypxl1 + 1, fpart(yend) * xgap, s);
+        plot(xpxl1, ypxl1, rfpart(yend) * xgap * m, s);
+        plot(xpxl1, ypxl1 + 1, fpart(yend) * xgap * m, s);
     }
  
     // first y-intersection for the main loop
@@ -579,21 +599,21 @@ void drawLine(float x0, float y0, float x1, float y1, Spectrum s) {
     double ypxl2 = ipart(yend);
  
     if (steep) {
-        plot(ypxl2, xpxl2, rfpart(yend) * xgap, s);
-        plot(ypxl2 + 1, xpxl2, fpart(yend) * xgap, s);
+        plot(ypxl2, xpxl2, rfpart(yend) * xgap * m, s);
+        plot(ypxl2 + 1, xpxl2, fpart(yend) * xgap * m, s);
     } else {
-        plot(xpxl2, ypxl2, rfpart(yend) * xgap, s);
-        plot(xpxl2, ypxl2 + 1, fpart(yend) * xgap, s);
+        plot(xpxl2, ypxl2, rfpart(yend) * xgap * m, s);
+        plot(xpxl2, ypxl2 + 1, fpart(yend) * xgap * m, s);
     }
  
     // main loop
     for (double x = xpxl1 + 1; x <= xpxl2 - 1; x++) {
         if (steep) {
-            plot(ipart(intery), x, rfpart(intery), s);
-            plot(ipart(intery) + 1, x, fpart(intery), s);
+            plot(ipart(intery), x, rfpart(intery) * m, s);
+            plot(ipart(intery) + 1, x, fpart(intery) * m, s);
         } else {
-            plot(x, ipart(intery), rfpart(intery), s);
-            plot(x, ipart(intery) + 1, fpart(intery), s);
+            plot(x, ipart(intery), rfpart(intery) * m, s);
+            plot(x, ipart(intery) + 1, fpart(intery) * m, s);
         }
         intery = intery + gradient;
     }
